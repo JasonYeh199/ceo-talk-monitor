@@ -43,6 +43,28 @@ Worker runtime
   - Runs the Python ingestion pipeline
 ```
 
+## Docker Images
+
+Use separate images for production:
+
+```text
+Dockerfile.api     Query API only; no ffmpeg, yt-dlp, or Whisper runtime.
+Dockerfile.worker  Heavy worker image for download, transcription, summary, and indexing.
+```
+
+Local Docker Compose uses the lightweight API image by default and exposes a `worker` profile for one-off worker commands:
+
+```powershell
+docker compose run --rm worker python main.py process --company NVDA --limit 1
+```
+
+The query API exposes deployment health checks:
+
+```text
+GET /healthz
+GET /readyz
+```
+
 ## Deployment Phases
 
 ### Phase 1: Repository Readiness

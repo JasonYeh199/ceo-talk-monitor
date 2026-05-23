@@ -1,6 +1,8 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     environment:
       DATABASE_URL: postgresql+psycopg://ceo_talk:ceo_talk@postgres:5432/ceo_talk
       QDRANT_URL: http://qdrant:6333
@@ -12,6 +14,32 @@ services:
       XDG_CACHE_HOME: /app/data/cache
     ports:
       - "8000:8000"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./main.py:/app/main.py:ro
+      - ./src:/app/src:ro
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    profiles:
+      - worker
+    environment:
+      DATABASE_URL: postgresql+psycopg://ceo_talk:ceo_talk@postgres:5432/ceo_talk
+      QDRANT_URL: http://qdrant:6333
+      APP_CONFIG_PATH: /app/config.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_SUMMARY_MODEL: ${OPENAI_SUMMARY_MODEL:-gpt-4.1-mini}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      HF_HOME: /app/data/hf_cache
+      XDG_CACHE_HOME: /app/data/cache
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ./main.py:/app/main.py:ro

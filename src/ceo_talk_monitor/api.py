@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import Depends, FastAPI, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 
 from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
@@ -20,6 +20,24 @@ def create_app() -> FastAPI:
         init_db()
         with SessionLocal() as session:
             upsert_config_companies(session, config)
+
+    @app.get("/healthz")
+    def healthz() -> dict:
+        return {"status": "ok"}
+
+    @app.get("/readyz")
+    def readyz() -> dict:
+        try:
+            config = get_config()
+            with SessionLocal() as session:
+                session.execute(text("select 1"))
+            return {
+                "status": "ready",
+                "companies": len(config.companies),
+                "tracked_tickers": config.portfolio.tickers,
+            }
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     @app.get("/companies")
     def companies(session: Session = Depends(get_session)) -> list[dict]:

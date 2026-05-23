@@ -15,9 +15,13 @@ Input `NVDA`, find CNBC YouTube videos related to Jensen Huang, download audio, 
 |-- config.yaml
 |-- docker-compose.yml
 |-- Dockerfile
+|-- Dockerfile.api
+|-- Dockerfile.worker
 |-- main.py
 |-- pyproject.toml
 |-- requirements.txt
+|-- requirements-api.txt
+|-- requirements-worker.txt
 |-- schema.sql
 |-- .env.example
 |-- apps/
@@ -128,6 +132,8 @@ python main.py search "Jensen Huang supply constraint"
 python main.py api
 ```
 
+For cloud deployment, use `Dockerfile.api` for the public query API and `Dockerfile.worker` for long-running ingest/transcription jobs.
+
 ## CLI
 
 ```text
@@ -147,6 +153,8 @@ python main.py api --host 0.0.0.0 --port 8000
 
 ```text
 GET /companies
+GET /healthz
+GET /readyz
 GET /talks?company=NVDA
 GET /talks/{id}
 GET /search?q=AI+demand
