@@ -72,6 +72,8 @@ Use the worker image for scheduled ingestion. For a cautious first cloud run:
 python main.py job daily-ingest --source youtube --company NVDA --limit 3 --metadata-only
 ```
 
+The metadata-only smoke test can run as a Render one-off job against the API service image. Use `Dockerfile.worker` for full audio download, transcription, and summary generation.
+
 For normal operation after audio/transcription storage is ready:
 
 ```powershell

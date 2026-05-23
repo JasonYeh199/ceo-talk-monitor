@@ -16,6 +16,8 @@ The safer smoke-test version stores candidate metadata only:
 python main.py job daily-ingest --source youtube --company NVDA --limit 3 --metadata-only
 ```
 
+This metadata-only smoke test can run as a Render one-off job on the API service image. Full audio download, transcription, and summary jobs should use `Dockerfile.worker`.
+
 The command records every run in `ingestion_runs`. Check the latest runs with:
 
 ```text
