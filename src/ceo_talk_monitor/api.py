@@ -5,7 +5,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 
 from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
-from ceo_talk_monitor.config import get_config
+from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, get_session, init_db, upsert_config_companies
 from ceo_talk_monitor.models import Company, Talk
 from ceo_talk_monitor.vector_store import VectorStore
@@ -29,12 +29,14 @@ def create_app() -> FastAPI:
     def readyz() -> dict:
         try:
             config = get_config()
+            settings = get_settings()
             with SessionLocal() as session:
                 session.execute(text("select 1"))
             return {
                 "status": "ready",
                 "companies": len(config.companies),
                 "tracked_tickers": config.portfolio.tickers,
+                "qdrant_configured": bool(settings.qdrant_url.strip()),
             }
         except Exception as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -81,11 +83,13 @@ def create_app() -> FastAPI:
     @app.get("/search")
     def search(q: str, limit: int = Query(default=10, le=50), session: Session = Depends(get_session)) -> dict:
         config = get_config()
+        settings = get_settings()
         vector_results: list[dict] = []
-        try:
-            vector_results = VectorStore(config.vector_store).search(q, limit=limit)
-        except Exception:
-            vector_results = []
+        if settings.qdrant_url.strip():
+            try:
+                vector_results = VectorStore(config.vector_store).search(q, limit=limit)
+            except Exception:
+                vector_results = []
         text_results = postgres_text_search(session, q, limit=limit)
         return {"query": q, "vector_results": vector_results, "text_results": text_results}
 

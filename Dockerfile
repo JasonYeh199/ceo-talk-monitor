@@ -16,6 +16,6 @@ COPY main.py config.yaml ./
 
 RUN pip install -r requirements.txt && pip install --no-deps -e .
 
-EXPOSE 8000
+EXPOSE 8000 10000
 
-CMD ["uvicorn", "ceo_talk_monitor.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn ceo_talk_monitor.api:app --host 0.0.0.0 --port ${PORT:-8000}"]

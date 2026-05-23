@@ -11,7 +11,15 @@ from ceo_talk_monitor.models import Base, Company, Executive
 
 def make_engine(database_url: str | None = None):
     settings = get_settings()
-    return create_engine(database_url or settings.database_url, pool_pre_ping=True)
+    return create_engine(normalize_database_url(database_url or settings.database_url), pool_pre_ping=True)
+
+
+def normalize_database_url(database_url: str) -> str:
+    if database_url.startswith("postgres://"):
+        return "postgresql+psycopg://" + database_url.removeprefix("postgres://")
+    if database_url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + database_url.removeprefix("postgresql://")
+    return database_url
 
 
 engine = make_engine()
@@ -60,4 +68,3 @@ def upsert_config_companies(session: Session, config: AppConfig) -> None:
             else:
                 executive.aliases = executive_cfg.aliases
     session.commit()
-

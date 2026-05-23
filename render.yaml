@@ -1,0 +1,33 @@
+# Render Blueprint for the public query API.
+# Vercel hosts apps/web; this service exposes the FastAPI API URL used by NEXT_PUBLIC_API_BASE_URL.
+services:
+  - type: web
+    name: ceo-talk-monitor-api
+    runtime: docker
+    region: singapore
+    dockerfilePath: ./Dockerfile.api
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: APP_CONFIG_PATH
+        value: /app/config.yaml
+      - key: LOG_LEVEL
+        value: INFO
+      - key: OPENAI_SUMMARY_MODEL
+        value: gpt-4.1-mini
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ceo-talk-monitor-db
+          property: connectionString
+      - key: QDRANT_URL
+        value: ""
+      - key: OPENAI_API_KEY
+        sync: false
+
+databases:
+  - name: ceo-talk-monitor-db
+    databaseName: ceo_talk
+    user: ceo_talk
