@@ -93,12 +93,14 @@ The recommended GitHub repository is:
 JasonYeh199/ceo-talk-monitor
 ```
 
-Vercel can host the research UI and thin query API. Long-running download/transcription/summarization jobs should run in a separate worker runtime. See:
+Vercel hosts the research UI in `apps/web`. The FastAPI query API and long-running download/transcription/summarization worker should run in a separate container runtime. See:
 
 - `docs/github_vercel_setup.md`
 - `docs/vercel_architecture.md`
 
 The first Vercel-ready research dashboard lives in `apps/web`.
+
+GitHub Actions runs basic Python and Next.js build checks on each push to `main`.
 
 ## Local Python Usage
 

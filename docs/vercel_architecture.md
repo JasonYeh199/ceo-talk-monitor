@@ -65,6 +65,8 @@ GET /healthz
 GET /readyz
 ```
 
+Vercel should point `NEXT_PUBLIC_API_BASE_URL` to the public HTTPS URL of the API image, not to the worker.
+
 ## Deployment Phases
 
 ### Phase 1: Repository Readiness

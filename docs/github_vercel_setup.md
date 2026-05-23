@@ -63,11 +63,11 @@ Select JasonYeh199/ceo-talk-monitor
 Set Root Directory to apps/web
 ```
 
-For the production architecture, Vercel should host the research UI and thin query API. Heavy jobs such as `yt-dlp`, Whisper transcription, and embedding generation should run in a worker environment outside Vercel.
+For the production architecture, Vercel should host the research UI. The FastAPI query API and heavy jobs such as `yt-dlp`, Whisper transcription, and embedding generation should run in container environments outside Vercel.
 
 ## Required Environment Variables
 
-For Vercel UI / thin API:
+For Vercel UI:
 
 ```text
 NEXT_PUBLIC_API_BASE_URL
@@ -94,8 +94,19 @@ The first cloud milestone should be:
 ```text
 GitHub repo connected to Vercel
 Vercel serves a read-only research UI
+FastAPI query API is available at a public HTTPS URL
 Postgres and Qdrant are external managed services
 Worker still runs locally or on a separate worker platform
 ```
 
 This avoids forcing long-running transcription jobs into Vercel Functions.
+
+## Vercel Project Settings
+
+```text
+Framework Preset: Next.js
+Root Directory: apps/web
+Build Command: npm run build
+Install Command: npm ci
+Output Directory: .next
+```
