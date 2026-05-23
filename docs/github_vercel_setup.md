@@ -120,3 +120,12 @@ Output Directory: .next
 ```
 
 If the import screen still shows `Application Preset: FastAPI`, manually change it to `Next.js` after setting Root Directory to `apps/web`.
+
+The repository includes a root-level fallback for accidental root imports:
+
+```text
+vercel.json -> framework: nextjs
+package.json -> build apps/web
+```
+
+This is only a guardrail. The cleaner Vercel project setting is still Root Directory `apps/web`.

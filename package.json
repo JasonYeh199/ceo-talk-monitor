@@ -1,0 +1,14 @@
+{
+  "name": "ceo-talk-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix apps/web run build",
+    "dev": "npm --prefix apps/web run dev",
+    "start": "npm --prefix apps/web run start"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+

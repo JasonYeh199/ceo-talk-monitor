@@ -116,6 +116,8 @@ Output Directory: .next
 
 If Vercel shows `Application Preset: FastAPI` or errors with `Found main.py but it does not define a top-level`, the project root is still set to `./`. Click `Edit` next to Root Directory and change it to `apps/web`.
 
+The repository also includes a root-level `vercel.json` fallback that builds `apps/web` from the repository root. Root Directory `apps/web` is still preferred because it keeps the Vercel project scoped to the dashboard.
+
 ## Local Python Usage
 
 Install Python 3.11+, FFmpeg, and dependencies:
