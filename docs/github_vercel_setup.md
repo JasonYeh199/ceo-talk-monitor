@@ -129,3 +129,5 @@ package.json -> build apps/web
 ```
 
 This is only a guardrail. The cleaner Vercel project setting is still Root Directory `apps/web`.
+
+If Vercel reports `No Next.js version detected`, the project is still reading the wrong `package.json`. Either use the latest commit with the root fallback dependencies, or set Root Directory to `apps/web` and redeploy.

@@ -118,6 +118,8 @@ If Vercel shows `Application Preset: FastAPI` or errors with `Found main.py but 
 
 The repository also includes a root-level `vercel.json` fallback that builds `apps/web` from the repository root. Root Directory `apps/web` is still preferred because it keeps the Vercel project scoped to the dashboard.
 
+If Vercel says `No Next.js version detected`, it is still reading the repository root. Redeploy the latest commit, or set Root Directory to `apps/web` so Vercel reads `apps/web/package.json`.
+
 ## Local Python Usage
 
 Install Python 3.11+, FFmpeg, and dependencies:

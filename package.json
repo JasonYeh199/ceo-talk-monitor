@@ -7,8 +7,12 @@
     "dev": "npm --prefix apps/web run dev",
     "start": "npm --prefix apps/web run start"
   },
+  "dependencies": {
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "engines": {
     "node": ">=20"
   }
 }
-
