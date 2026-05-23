@@ -1,6 +1,11 @@
 name: Cloud Metadata Ingest
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/cloud-ingest.yml"
   schedule:
     - cron: "10 14 * * 1-5"
   workflow_dispatch:
