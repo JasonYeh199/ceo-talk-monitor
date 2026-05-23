@@ -1,0 +1,30 @@
+# Runtime data and model caches
+data/
+tools/
+
+# Python API/worker files are deployed on Render, not Vercel
+src/
+main.py
+config.yaml
+requirements*.txt
+pyproject.toml
+Dockerfile*
+docker-compose.yml
+schema.sql
+
+# Docs and local metadata are not needed for the web build
+docs/
+.github/
+.env
+.env.*
+
+# Local/editor caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+node_modules/
+.next/
