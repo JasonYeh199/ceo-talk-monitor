@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://ceo_talk:ceo_talk@localhost:5432/ceo_talk"
     qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str | None = None
     openai_api_key: str | None = None
     openai_summary_model: str | None = None
     app_config_path: str = "config.yaml"

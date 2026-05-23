@@ -110,3 +110,20 @@ class Summary(Base):
 
     talk: Mapped[Talk] = relationship(back_populates="summary")
 
+
+class IngestionRun(Base):
+    __tablename__ = "ingestion_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_name: Mapped[str] = mapped_column(String(128), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="running", index=True)
+    source: Mapped[str] = mapped_column(String(64), default="all", index=True)
+    company_ticker: Mapped[str | None] = mapped_column(String(16), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    parameters: Mapped[dict] = mapped_column(JsonType, default=dict)
+    metrics: Mapped[dict] = mapped_column(JsonType, default=dict)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    exit_code: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

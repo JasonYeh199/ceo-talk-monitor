@@ -18,7 +18,11 @@ class VectorStore:
             from qdrant_client import QdrantClient
 
             settings = get_settings()
-            self._client = QdrantClient(url=settings.qdrant_url, check_compatibility=False)
+            self._client = QdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key,
+                check_compatibility=False,
+            )
         return self._client
 
     def ensure_collection(self) -> None:

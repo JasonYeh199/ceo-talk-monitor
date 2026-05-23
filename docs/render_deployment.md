@@ -62,6 +62,7 @@ For vector search, create a Qdrant Cloud cluster and set:
 
 ```text
 QDRANT_URL=https://...
+QDRANT_API_KEY=...
 ```
 
 Then run ingestion/processing with the same `QDRANT_URL`.
@@ -74,7 +75,13 @@ The API database starts with configured companies on boot. To populate talks and
 $env:DATABASE_URL="<Render external database URL>"
 $env:QDRANT_URL="<Qdrant URL, optional>"
 python main.py init-db
-python main.py ingest --source youtube --company NVDA --limit 3
+python main.py job daily-ingest --source youtube --company NVDA --limit 3
 ```
 
 For production, run ingestion with `Dockerfile.worker` on a scheduled worker or job service instead of your laptop.
+
+Recent worker runs are available at:
+
+```text
+https://ceo-talk-monitor-api.onrender.com/jobs
+```

@@ -25,6 +25,10 @@ export async function fetchSearch(query) {
   return fetchJson(`/search?q=${encodeURIComponent(query)}`);
 }
 
+export async function fetchJobs() {
+  return fetchJson("/jobs?limit=5");
+}
+
 async function fetchJson(path) {
   if (API_CONFIG_ERROR) {
     return { data: null, error: API_CONFIG_ERROR };

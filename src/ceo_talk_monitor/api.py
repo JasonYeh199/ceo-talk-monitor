@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
 from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, get_session, init_db, upsert_config_companies
-from ceo_talk_monitor.models import Company, Talk
+from ceo_talk_monitor.models import Company, IngestionRun, Talk
 from ceo_talk_monitor.vector_store import VectorStore
 
 
@@ -68,6 +68,18 @@ def create_app() -> FastAPI:
             statement = statement.where(Talk.company_ticker == company.upper())
         rows = session.scalars(statement.limit(limit)).all()
         return [_talk_payload(row, include_segments=False) for row in rows]
+
+    @app.get("/jobs")
+    def jobs(
+        status: str | None = None,
+        limit: int = Query(default=10, le=50),
+        session: Session = Depends(get_session),
+    ) -> list[dict]:
+        statement = select(IngestionRun).order_by(IngestionRun.started_at.desc(), IngestionRun.id.desc())
+        if status:
+            statement = statement.where(IngestionRun.status == status)
+        rows = session.scalars(statement.limit(limit)).all()
+        return [_job_payload(row) for row in rows]
 
     @app.get("/talks/{talk_id}")
     def talk_detail(talk_id: int, session: Session = Depends(get_session)) -> dict:
@@ -139,6 +151,26 @@ def _talk_payload(talk: Talk, include_segments: bool) -> dict:
             for segment in talk.transcript_segments
         ]
     return payload
+
+
+def _job_payload(run: IngestionRun) -> dict:
+    duration_seconds = None
+    if run.finished_at:
+        duration_seconds = max(0.0, (run.finished_at - run.started_at).total_seconds())
+    return {
+        "id": run.id,
+        "job_name": run.job_name,
+        "status": run.status,
+        "source": run.source,
+        "company": run.company_ticker,
+        "started_at": run.started_at.isoformat() if run.started_at else None,
+        "finished_at": run.finished_at.isoformat() if run.finished_at else None,
+        "duration_seconds": duration_seconds,
+        "parameters": run.parameters,
+        "metrics": run.metrics,
+        "error_message": run.error_message,
+        "exit_code": run.exit_code,
+    }
 
 
 app = create_app()

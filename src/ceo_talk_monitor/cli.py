@@ -8,6 +8,7 @@ from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
 from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, init_db, upsert_config_companies
 from ceo_talk_monitor.ingestion import IngestionPipeline
+from ceo_talk_monitor.jobs import run_daily_ingest
 from ceo_talk_monitor.models import Talk
 from ceo_talk_monitor.vector_store import VectorStore
 from sqlalchemy import select
@@ -34,6 +35,14 @@ def build_parser() -> argparse.ArgumentParser:
     process.add_argument("--talk-id", type=int, help="Process one specific talk id")
     process.add_argument("--company", help="Optional ticker filter for pending talks")
     process.add_argument("--limit", type=int, default=1)
+
+    job = subparsers.add_parser("job", help="Run an operational job with persisted run history")
+    job.add_argument("name", choices=["daily-ingest"])
+    job.add_argument("--source", choices=["youtube", "podcast", "all"], default="all")
+    job.add_argument("--company", help="Optional ticker to limit the job")
+    job.add_argument("--limit", type=int, default=None)
+    job.add_argument("--metadata-only", action="store_true", help="Save metadata without audio/transcript/summary processing")
+    job.add_argument("--lock-ttl-minutes", type=int, default=180)
 
     summarize = subparsers.add_parser("summarize", help="Regenerate summaries for recent talks")
     summarize.add_argument("--company", required=True)
@@ -116,6 +125,24 @@ def main() -> None:
                 print(f"[talk {talk.id}] {talk.status}: {talk.title}")
                 processed += 1
             print(f"Processed {processed} talk(s)")
+            return
+
+        if args.command == "job":
+            run = run_daily_ingest(
+                session,
+                config,
+                source=args.source,
+                company=args.company,
+                limit=args.limit,
+                process=not args.metadata_only,
+                lock_ttl_minutes=args.lock_ttl_minutes,
+            )
+            print(f"Job {run.id} {run.job_name}: {run.status}")
+            pprint(run.metrics, sort_dicts=False)
+            if run.error_message:
+                print(run.error_message)
+            if run.status == "failed":
+                raise SystemExit(1)
             return
 
         if args.command == "summarize":

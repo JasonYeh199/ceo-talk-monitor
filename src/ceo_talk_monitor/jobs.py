@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+import logging
+from datetime import timedelta
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ceo_talk_monitor.config import AppConfig
+from ceo_talk_monitor.ingestion import IngestionPipeline
+from ceo_talk_monitor.models import IngestionRun, utcnow
+
+logger = logging.getLogger(__name__)
+
+VALID_SOURCES = {"youtube", "podcast", "all"}
+
+
+def run_daily_ingest(
+    session: Session,
+    config: AppConfig,
+    *,
+    source: str = "all",
+    company: str | None = None,
+    limit: int | None = None,
+    process: bool = True,
+    lock_ttl_minutes: int = 180,
+) -> IngestionRun:
+    normalized_source = source.lower()
+    if normalized_source not in VALID_SOURCES:
+        raise ValueError(f"Unsupported source: {source}")
+
+    normalized_company = company.upper() if company else None
+    parameters = {
+        "source": normalized_source,
+        "company": normalized_company,
+        "limit": limit,
+        "process": process,
+        "lock_ttl_minutes": lock_ttl_minutes,
+    }
+
+    active_run = _find_active_run(session, "daily-ingest", lock_ttl_minutes)
+    if active_run is not None:
+        return _record_skipped_run(
+            session,
+            parameters,
+            normalized_source,
+            normalized_company,
+            f"Skipped because ingestion run {active_run.id} is still running.",
+            {"active_run_id": active_run.id, "active_started_at": active_run.started_at.isoformat()},
+        )
+
+    run = IngestionRun(
+        job_name="daily-ingest",
+        status="running",
+        source=normalized_source,
+        company_ticker=normalized_company,
+        parameters=parameters,
+        metrics={},
+        started_at=utcnow(),
+    )
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+
+    try:
+        pipeline = IngestionPipeline(config, session)
+        pipeline.bootstrap()
+        metrics = _run_pipeline(pipeline, config, normalized_source, normalized_company, limit, process)
+        run.status = "succeeded"
+        run.metrics = metrics
+        run.exit_code = 0
+        run.error_message = None
+    except Exception as exc:
+        logger.exception("Daily ingestion job failed")
+        session.rollback()
+        run = session.get(IngestionRun, run.id) or run
+        run.status = "failed"
+        run.metrics = run.metrics or {}
+        run.error_message = str(exc)
+        run.exit_code = 1
+    finally:
+        run.finished_at = utcnow()
+        session.add(run)
+        session.commit()
+        session.refresh(run)
+
+    return run
+
+
+def _run_pipeline(
+    pipeline: IngestionPipeline,
+    config: AppConfig,
+    source: str,
+    company: str | None,
+    limit: int | None,
+    process: bool,
+) -> dict:
+    metrics: dict = {
+        "accepted_total": 0,
+        "youtube": {},
+        "podcast": {"accepted": 0},
+        "process": process,
+    }
+
+    if source in ("youtube", "all"):
+        companies = [company] if company else config.portfolio.tickers
+        for ticker in companies:
+            talks = pipeline.ingest_youtube(ticker, limit=limit, process=process)
+            metrics["youtube"][ticker] = {
+                "accepted": len(talks),
+                "ready": sum(1 for talk in talks if talk.status == "ready"),
+                "errors": sum(1 for talk in talks if talk.status == "error"),
+            }
+            metrics["accepted_total"] += len(talks)
+
+    if source in ("podcast", "all"):
+        talks = pipeline.ingest_podcasts(company, limit=limit, process=process)
+        metrics["podcast"] = {
+            "accepted": len(talks),
+            "ready": sum(1 for talk in talks if talk.status == "ready"),
+            "errors": sum(1 for talk in talks if talk.status == "error"),
+        }
+        metrics["accepted_total"] += len(talks)
+
+    return metrics
+
+
+def _find_active_run(session: Session, job_name: str, lock_ttl_minutes: int) -> IngestionRun | None:
+    if lock_ttl_minutes <= 0:
+        return None
+    cutoff = utcnow() - timedelta(minutes=lock_ttl_minutes)
+    return session.scalar(
+        select(IngestionRun)
+        .where(IngestionRun.job_name == job_name)
+        .where(IngestionRun.status == "running")
+        .where(IngestionRun.started_at >= cutoff)
+        .order_by(IngestionRun.started_at.desc())
+        .limit(1)
+    )
+
+
+def _record_skipped_run(
+    session: Session,
+    parameters: dict,
+    source: str,
+    company: str | None,
+    message: str,
+    metrics: dict,
+) -> IngestionRun:
+    now = utcnow()
+    run = IngestionRun(
+        job_name="daily-ingest",
+        status="skipped",
+        source=source,
+        company_ticker=company,
+        started_at=now,
+        finished_at=now,
+        parameters=parameters,
+        metrics=metrics,
+        error_message=message,
+        exit_code=0,
+    )
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    return run

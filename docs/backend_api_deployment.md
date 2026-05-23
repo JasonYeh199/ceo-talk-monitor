@@ -21,6 +21,7 @@ Dockerfile.worker
 ```text
 DATABASE_URL=postgresql+psycopg://...
 QDRANT_URL=https://...
+QDRANT_API_KEY=
 APP_CONFIG_PATH=/app/config.yaml
 OPENAI_API_KEY=
 OPENAI_SUMMARY_MODEL=gpt-4.1-mini
@@ -62,3 +63,23 @@ If using Render Postgres from outside Render, add your current IP to the databas
 3. Worker writes embeddings to Qdrant.
 4. FastAPI serves `/companies`, `/talks`, `/search`, and `/compare`.
 5. Vercel dashboard fetches the FastAPI URL through `NEXT_PUBLIC_API_BASE_URL`.
+
+## Scheduled Worker Command
+
+Use the worker image for scheduled ingestion. For a cautious first cloud run:
+
+```powershell
+python main.py job daily-ingest --source youtube --company NVDA --limit 3 --metadata-only
+```
+
+For normal operation after audio/transcription storage is ready:
+
+```powershell
+python main.py job daily-ingest --source all --limit 3
+```
+
+Each run is written to `ingestion_runs` and exposed through:
+
+```text
+GET /jobs
+```

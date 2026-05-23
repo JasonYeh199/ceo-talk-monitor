@@ -1,4 +1,4 @@
-import { fetchCompanies, fetchCompare, fetchSearch, fetchTalks } from "../lib/api";
+import { fetchCompanies, fetchCompare, fetchJobs, fetchSearch, fetchTalks } from "../lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -12,18 +12,21 @@ export default async function Home({ searchParams }) {
   const topic = String(params?.topic || DEFAULT_TOPIC);
   const query = String(params?.q || DEFAULT_QUERY);
 
-  const [companiesResult, talksResult, compareResult, searchResult] = await Promise.all([
+  const [companiesResult, talksResult, compareResult, searchResult, jobsResult] = await Promise.all([
     fetchCompanies(),
     fetchTalks(company),
     fetchCompare(company, topic),
     fetchSearch(query),
+    fetchJobs(),
   ]);
 
   const companies = companiesResult.data || [];
   const talks = talksResult.data || [];
   const compare = compareResult.data || { timeline: [] };
   const search = searchResult.data || { vector_results: [], text_results: [] };
-  const errors = [companiesResult, talksResult, compareResult, searchResult].filter((result) => result.error);
+  const jobs = jobsResult.data || [];
+  const errors = [companiesResult, talksResult, compareResult, searchResult, jobsResult].filter((result) => result.error);
+  const latestJob = jobs[0];
 
   const readyCount = talks.filter((talk) => talk.status === "ready").length;
   const toneCounts = {
@@ -43,6 +46,7 @@ export default async function Home({ searchParams }) {
           <span>{company}</span>
           <span>{readyCount}/{talks.length} ready</span>
           <span>{compare.count || 0} topic hits</span>
+          <span>{latestJob ? `${latestJob.job_name}: ${latestJob.status}` : "no jobs"}</span>
         </div>
       </header>
 
@@ -133,6 +137,23 @@ export default async function Home({ searchParams }) {
           <ResultList title="Text" items={search.text_results || []} kind="text" />
         </div>
       </section>
+
+      <section className="operations-band">
+        <SectionTitle title="Operations" subtitle="Recent ingestion runs" />
+        <div className="job-list">
+          {jobs.length === 0 ? <p className="empty">No runs</p> : null}
+          {jobs.map((job) => (
+            <div className="job-row" key={job.id}>
+              <span className={`job-status ${job.status}`}>{job.status}</span>
+              <strong>{job.job_name}</strong>
+              <span>{job.source}{job.company ? ` / ${job.company}` : ""}</span>
+              <span>{formatDate(job.started_at)}</span>
+              <span>{formatDuration(job.duration_seconds)}</span>
+              <span>{job.metrics?.accepted_total ?? "-"} accepted</span>
+            </div>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }
@@ -184,4 +205,26 @@ function countTone(items, aliases) {
     const matches = aliases.some((alias) => tone.includes(alias.toLowerCase()));
     return matches ? count + 1 : count;
   }, 0);
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "-";
+  }
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatDuration(value) {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+  if (value < 60) {
+    return `${Math.round(value)}s`;
+  }
+  return `${Math.round(value / 60)}m`;
 }

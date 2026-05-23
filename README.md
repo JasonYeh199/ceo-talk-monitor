@@ -36,6 +36,7 @@ Input `NVDA`, find CNBC YouTube videos related to Jensen Huang, download audio, 
 |       |-- db.py
 |       |-- embeddings.py
 |       |-- ingestion.py
+|       |-- jobs.py
 |       |-- models.py
 |       |-- prompts.py
 |       |-- relevance.py
@@ -99,6 +100,7 @@ Vercel hosts the research UI in `apps/web`. The FastAPI query API and long-runni
 - `docs/vercel_architecture.md`
 - `docs/backend_api_deployment.md`
 - `docs/render_deployment.md`
+- `docs/operations.md`
 
 The first Vercel-ready research dashboard lives in `apps/web`.
 
@@ -147,6 +149,7 @@ python main.py init-db
 python main.py ingest --source youtube --company NVDA
 python main.py ingest --source podcast
 python main.py daily
+python main.py job daily-ingest --source youtube --company NVDA --limit 3 --metadata-only
 python main.py process --company NVDA --limit 1
 python main.py summarize --company NVDA --days 30
 python main.py compare --company NVDA --topic "AI demand"
@@ -164,6 +167,7 @@ python main.py ingest --source youtube --company NVDA
 python main.py ingest --source podcast
 python main.py ingest --source all
 python main.py daily
+python main.py job daily-ingest --source all --limit 3
 python main.py process --company NVDA --limit 1
 python main.py summarize --company NVDA --days 30
 python main.py compare --company NVDA --topic "AI demand"
@@ -181,6 +185,7 @@ GET /talks?company=NVDA
 GET /talks/{id}
 GET /search?q=AI+demand
 GET /compare?company=NVDA&topic=AI+demand
+GET /jobs
 ```
 
 ## Database Schema
@@ -192,6 +197,7 @@ Core tables:
 - `talks`: media metadata, relevance score, processing status, audio/transcript paths.
 - `transcript_segments`: timestamped transcript text, optional speaker labels.
 - `summaries`: investment summary fields and raw JSON payload.
+- `ingestion_runs`: operational history for scheduled ingestion jobs.
 
 Embeddings are stored in Qdrant under the collection configured by `vector_store.collection_name`.
 

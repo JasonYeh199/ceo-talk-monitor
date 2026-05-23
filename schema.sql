@@ -65,7 +65,25 @@ CREATE TABLE summaries (
     updated_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE ingestion_runs (
+    id SERIAL PRIMARY KEY,
+    job_name VARCHAR(128) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'running',
+    source VARCHAR(64) NOT NULL DEFAULT 'all',
+    company_ticker VARCHAR(16),
+    started_at TIMESTAMPTZ NOT NULL,
+    finished_at TIMESTAMPTZ,
+    parameters JSONB NOT NULL DEFAULT '{}',
+    metrics JSONB NOT NULL DEFAULT '{}',
+    error_message TEXT,
+    exit_code INTEGER,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE INDEX ix_talks_company_ticker ON talks(company_ticker);
 CREATE INDEX ix_talks_published_at ON talks(published_at);
 CREATE INDEX ix_transcript_segments_talk_id ON transcript_segments(talk_id);
-
+CREATE INDEX ix_ingestion_runs_job_name ON ingestion_runs(job_name);
+CREATE INDEX ix_ingestion_runs_status ON ingestion_runs(status);
+CREATE INDEX ix_ingestion_runs_started_at ON ingestion_runs(started_at);
