@@ -44,6 +44,17 @@ NEXT_PUBLIC_API_BASE_URL=https://your-api-host.example.com
 
 Redeploy the Vercel project after changing the environment variable.
 
+## Sync Local MVP Data
+
+To copy already processed local metadata, transcripts, and summaries to the cloud Postgres database:
+
+```powershell
+$env:CLOUD_DATABASE_URL="<Render external database URL>"
+docker compose run --rm -e CLOUD_DATABASE_URL -v ${PWD}/scripts:/app/scripts:ro app python scripts/sync_cloud_db.py
+```
+
+If using Render Postgres from outside Render, add your current IP to the database allow list first.
+
 ## Data Flow
 
 1. Worker ingests CNBC YouTube or podcast sources.
@@ -51,4 +62,3 @@ Redeploy the Vercel project after changing the environment variable.
 3. Worker writes embeddings to Qdrant.
 4. FastAPI serves `/companies`, `/talks`, `/search`, and `/compare`.
 5. Vercel dashboard fetches the FastAPI URL through `NEXT_PUBLIC_API_BASE_URL`.
-
