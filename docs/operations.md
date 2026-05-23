@@ -18,6 +18,8 @@ python main.py job daily-ingest --source youtube --company NVDA --limit 3 --meta
 
 This metadata-only smoke test can run as a Render one-off job on the API service image. Full audio download, transcription, and summary jobs should use `Dockerfile.worker`.
 
+If Render returns `new paid services not allowed`, the account cannot create one-off jobs yet. The API and dashboard can still read existing data, but scheduled ingestion should remain pending until a paid job/worker runtime or another scheduler is available.
+
 The command records every run in `ingestion_runs`. Check the latest runs with:
 
 ```text

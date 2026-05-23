@@ -85,3 +85,5 @@ Recent worker runs are available at:
 ```text
 https://ceo-talk-monitor-api.onrender.com/jobs
 ```
+
+If Render blocks one-off jobs with `new paid services not allowed`, enable a paid job/worker runtime or use another scheduler before turning on daily ingestion.
