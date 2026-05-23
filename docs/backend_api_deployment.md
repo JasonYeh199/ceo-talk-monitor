@@ -70,7 +70,7 @@ If using Render Postgres from outside Render, add your current IP to the databas
 Use the worker image for scheduled ingestion. For a cautious first cloud run:
 
 ```powershell
-python main.py job daily-ingest --source youtube --company NVDA --limit 3 --metadata-only
+python main.py job daily-ingest --source youtube --limit 1 --metadata-only
 ```
 
 The metadata-only smoke test can run as a Render one-off job against the API service image. Use `Dockerfile.worker` for full audio download, transcription, and summary generation.

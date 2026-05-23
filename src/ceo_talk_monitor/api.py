@@ -88,7 +88,7 @@ def create_app() -> FastAPI:
     def trigger_daily_ingest(
         source: str = Query(default="youtube"),
         company: str | None = None,
-        limit: int = Query(default=3, ge=1, le=10),
+        limit: int = Query(default=1, ge=1, le=10),
         metadata_only: bool = True,
         lock_ttl_minutes: int = Query(default=180, ge=0, le=1440),
         x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),

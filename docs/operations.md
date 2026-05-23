@@ -13,7 +13,7 @@ python main.py job daily-ingest --source all --limit 3
 The safer smoke-test version stores candidate metadata only:
 
 ```powershell
-python main.py job daily-ingest --source youtube --company NVDA --limit 3 --metadata-only
+python main.py job daily-ingest --source youtube --limit 1 --metadata-only
 ```
 
 This metadata-only smoke test can run as a Render one-off job on the API service image. Full audio download, transcription, and summary jobs should use `Dockerfile.worker`.
@@ -51,8 +51,8 @@ The scheduled workflow runs on weekdays and defaults to:
 
 ```text
 source=youtube
-company=NVDA
-limit=3
+company=<all config.yaml portfolio tickers>
+limit=1
 metadata_only=true
 ```
 
