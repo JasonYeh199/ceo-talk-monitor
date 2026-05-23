@@ -151,6 +151,7 @@ python main.py ingest --source podcast
 python main.py daily
 python main.py job daily-ingest --source youtube --limit 1 --metadata-only
 python main.py job curate-relevance --limit 500
+python main.py job process-pending --company NVDA --limit 1 --transcription-provider faster_whisper --whisper-model-size base
 python main.py process --company NVDA --limit 1
 python main.py summarize --company NVDA --days 30
 python main.py compare --company NVDA --topic "AI demand"
@@ -169,6 +170,7 @@ python main.py ingest --source podcast
 python main.py ingest --source all
 python main.py daily
 python main.py job daily-ingest --source all --limit 3
+python main.py job process-pending --company NVDA --limit 1
 python main.py process --company NVDA --limit 1
 python main.py summarize --company NVDA --days 30
 python main.py compare --company NVDA --topic "AI demand"
@@ -190,6 +192,20 @@ GET /jobs
 POST /admin/jobs/daily-ingest
 POST /admin/jobs/curate-relevance
 ```
+
+## Cloud Jobs
+
+Discovery and relevance cleanup run through `.github/workflows/cloud-ingest.yml`, which calls the protected Render API. Heavy audio processing runs manually through `.github/workflows/cloud-process.yml` so transcription does not block the public API service.
+
+Required GitHub Actions secrets:
+
+```text
+CEO_TALK_ADMIN_TOKEN
+CEO_TALK_API_BASE_URL
+CEO_TALK_DATABASE_URL
+```
+
+`CEO_TALK_DATABASE_URL` should be the Render external Postgres connection string, with SSL enabled. Add `OPENAI_API_KEY`, `QDRANT_URL`, and `QDRANT_API_KEY` only when those providers are enabled.
 
 ## Database Schema
 

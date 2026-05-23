@@ -8,7 +8,7 @@ from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
 from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, init_db, upsert_config_companies
 from ceo_talk_monitor.ingestion import IngestionPipeline
-from ceo_talk_monitor.jobs import curate_relevance, run_daily_ingest
+from ceo_talk_monitor.jobs import PROCESSABLE_STATUSES, curate_relevance, run_daily_ingest, run_process_pending
 from ceo_talk_monitor.models import Talk
 from ceo_talk_monitor.vector_store import VectorStore
 from sqlalchemy import select
@@ -35,14 +35,27 @@ def build_parser() -> argparse.ArgumentParser:
     process.add_argument("--talk-id", type=int, help="Process one specific talk id")
     process.add_argument("--company", help="Optional ticker filter for pending talks")
     process.add_argument("--limit", type=int, default=1)
+    process.add_argument("--transcription-provider", choices=["faster_whisper", "openai", "none"])
+    process.add_argument("--whisper-model-size", help="Override faster-whisper model size, for example base or small")
+    process.add_argument("--summary-provider", choices=["heuristic", "openai"])
 
     job = subparsers.add_parser("job", help="Run an operational job with persisted run history")
-    job.add_argument("name", choices=["daily-ingest", "curate-relevance"])
+    job.add_argument("name", choices=["daily-ingest", "curate-relevance", "process-pending"])
     job.add_argument("--source", choices=["youtube", "podcast", "all"], default="all")
     job.add_argument("--company", help="Optional ticker to limit the job")
+    job.add_argument("--talk-id", type=int, help="Process one specific talk id for process-pending")
     job.add_argument("--limit", type=int, default=None)
     job.add_argument("--metadata-only", action="store_true", help="Save metadata without audio/transcript/summary processing")
     job.add_argument("--lock-ttl-minutes", type=int, default=180)
+    job.add_argument(
+        "--status",
+        action="append",
+        choices=list(PROCESSABLE_STATUSES),
+        help="Process only talks with this status. Repeatable; defaults to pending/error/in-progress statuses.",
+    )
+    job.add_argument("--transcription-provider", choices=["faster_whisper", "openai", "none"])
+    job.add_argument("--whisper-model-size", help="Override faster-whisper model size, for example base or small")
+    job.add_argument("--summary-provider", choices=["heuristic", "openai"])
 
     summarize = subparsers.add_parser("summarize", help="Regenerate summaries for recent talks")
     summarize.add_argument("--company", required=True)
@@ -64,6 +77,18 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _apply_runtime_overrides(config, args) -> None:
+    transcription_provider = getattr(args, "transcription_provider", None)
+    whisper_model_size = getattr(args, "whisper_model_size", None)
+    summary_provider = getattr(args, "summary_provider", None)
+    if transcription_provider:
+        config.transcription.provider = transcription_provider
+    if whisper_model_size:
+        config.transcription.model_size = whisper_model_size
+    if summary_provider:
+        config.summarization.provider = summary_provider
+
+
 def main() -> None:
     settings = get_settings()
     logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.INFO))
@@ -76,6 +101,7 @@ def main() -> None:
         return
 
     config = get_config()
+    _apply_runtime_overrides(config, args)
     init_db()
 
     with SessionLocal() as session:
@@ -113,13 +139,16 @@ def main() -> None:
             if args.talk_id:
                 talks = [session.get(Talk, args.talk_id)]
             else:
-                statement = select(Talk).where(Talk.status != "ready").order_by(Talk.id)
+                statement = select(Talk).where(Talk.status.in_(PROCESSABLE_STATUSES)).order_by(Talk.id)
                 if args.company:
                     statement = statement.where(Talk.company_ticker == args.company.upper())
                 talks = list(session.scalars(statement.limit(args.limit)))
             processed = 0
             for talk in talks:
                 if talk is None:
+                    continue
+                if talk.status in ("ready", "rejected"):
+                    print(f"[talk {talk.id}] skipped {talk.status}: {talk.title}")
                     continue
                 pipeline.process_talk(talk)
                 print(f"[talk {talk.id}] {talk.status}: {talk.title}")
@@ -138,12 +167,22 @@ def main() -> None:
                     process=not args.metadata_only,
                     lock_ttl_minutes=args.lock_ttl_minutes,
                 )
-            else:
+            elif args.name == "curate-relevance":
                 run = curate_relevance(
                     session,
                     config,
                     company=args.company,
                     limit=args.limit or 500,
+                )
+            else:
+                run = run_process_pending(
+                    session,
+                    config,
+                    talk_id=args.talk_id,
+                    company=args.company,
+                    limit=args.limit or 1,
+                    statuses=tuple(args.status) if args.status else PROCESSABLE_STATUSES,
+                    lock_ttl_minutes=args.lock_ttl_minutes,
                 )
             print(f"Job {run.id} {run.job_name}: {run.status}")
             pprint(run.metrics, sort_dicts=False)

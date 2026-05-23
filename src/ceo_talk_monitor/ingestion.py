@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ceo_talk_monitor.audio import download_url_audio, download_youtube_audio, safe_slug
 from ceo_talk_monitor.collectors.podcast import PodcastCollector
 from ceo_talk_monitor.collectors.youtube import YoutubeCollector
-from ceo_talk_monitor.config import AppConfig, ensure_storage_dirs
+from ceo_talk_monitor.config import AppConfig, ensure_storage_dirs, get_settings
 from ceo_talk_monitor.db import init_db, upsert_config_companies
 from ceo_talk_monitor.models import Company, Summary, Talk, TranscriptSegment
 from ceo_talk_monitor.relevance import score_candidate
@@ -226,6 +226,8 @@ class IngestionPipeline:
         return summary
 
     def _index_talk(self, talk: Talk, transcript: TranscriptPayload, summary: SummaryPayload) -> None:
+        if not get_settings().qdrant_url.strip():
+            return
         text = "\n".join([talk.title, summary.one_liner, transcript.text[:20000]])
         payload = {
             "talk_id": talk.id,

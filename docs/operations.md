@@ -42,6 +42,49 @@ POST /admin/jobs/curate-relevance
 
 `GET /talks` hides rejected candidates by default. Use `include_rejected=true` only for audit/debug views.
 
+## Cloud Processing
+
+Use `process-pending` to turn stored candidates into research-ready talks. It downloads audio, transcribes, summarizes, optionally indexes vectors, and records the run in `ingestion_runs`:
+
+```powershell
+python main.py job process-pending --company NVDA --limit 1 --transcription-provider faster_whisper --whisper-model-size base
+```
+
+To process one exact row:
+
+```powershell
+python main.py job process-pending --talk-id 12 --transcription-provider faster_whisper --whisper-model-size base
+```
+
+`process-pending` only processes `pending`, `error`, `downloading`, `transcribing`, and `summarizing` talks. It skips `ready` and `rejected` rows so false positives do not accidentally enter the research database.
+
+The repository includes `.github/workflows/cloud-process.yml` for manual cloud processing on GitHub Actions. Configure this required secret:
+
+```text
+CEO_TALK_DATABASE_URL=<Render external Postgres URL with sslmode=require>
+```
+
+Optional secrets:
+
+```text
+OPENAI_API_KEY=<required only for OpenAI transcription or summaries>
+QDRANT_URL=<Qdrant Cloud URL, optional>
+QDRANT_API_KEY=<Qdrant API key, optional>
+```
+
+Run it from GitHub Actions:
+
+```text
+Actions -> Cloud Process Pending Talks -> Run workflow
+company=NVDA
+limit=1
+transcription_provider=faster_whisper
+whisper_model_size=base
+summary_provider=heuristic
+```
+
+The first run downloads the Whisper model and can take longer. Later runs reuse the GitHub Actions model cache. Audio and local transcript files are temporary on the Actions runner; the durable system of record is Render Postgres. Persistent object storage for audio/transcript artifacts is a later production step.
+
 ## GitHub Actions Scheduler
 
 The repository includes `.github/workflows/cloud-ingest.yml` as a no-worker fallback. It calls the public API and triggers metadata-only ingestion through:

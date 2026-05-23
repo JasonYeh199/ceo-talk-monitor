@@ -1,0 +1,154 @@
+name: Cloud Process Pending Talks
+
+on:
+  workflow_dispatch:
+    inputs:
+      company:
+        description: "Optional ticker. Leave blank when using talk_id."
+        required: false
+        default: "NVDA"
+      talk_id:
+        description: "Optional exact talk id to process."
+        required: false
+        default: ""
+      limit:
+        description: "Maximum pending talks to process."
+        required: true
+        default: "1"
+      transcription_provider:
+        description: "Transcription provider."
+        required: true
+        default: "faster_whisper"
+        type: choice
+        options:
+          - faster_whisper
+          - openai
+          - none
+      whisper_model_size:
+        description: "faster-whisper model size."
+        required: true
+        default: "base"
+        type: choice
+        options:
+          - tiny
+          - base
+          - small
+          - medium
+      summary_provider:
+        description: "Summary provider."
+        required: true
+        default: "heuristic"
+        type: choice
+        options:
+          - heuristic
+          - openai
+      lock_ttl_minutes:
+        description: "Skip when another process-pending run is still active within this TTL."
+        required: true
+        default: "720"
+
+concurrency:
+  group: cloud-process-pending
+  cancel-in-progress: false
+
+jobs:
+  process:
+    name: Download, transcribe, summarize
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      APP_CONFIG_PATH: config.yaml
+      DATABASE_URL: ${{ secrets.CEO_TALK_DATABASE_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      QDRANT_URL: ${{ secrets.QDRANT_URL }}
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+      LOG_LEVEL: INFO
+      PYTHONIOENCODING: utf-8
+      HF_HOME: /home/runner/.cache/huggingface
+      XDG_CACHE_HOME: /home/runner/.cache
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Cache model downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/ctranslate2
+            ~/.cache/fastembed
+          key: ceo-talk-models-${{ inputs.transcription_provider }}-${{ inputs.whisper_model_size }}
+          restore-keys: |
+            ceo-talk-models-${{ inputs.transcription_provider }}-
+            ceo-talk-models-
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install worker dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-worker.txt
+          python -m pip install --no-deps -e .
+
+      - name: Validate required secrets
+        env:
+          INPUT_TRANSCRIPTION_PROVIDER: ${{ inputs.transcription_provider }}
+          INPUT_SUMMARY_PROVIDER: ${{ inputs.summary_provider }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "CEO_TALK_DATABASE_URL is not configured. Add the Render external Postgres URL as a GitHub Actions secret."
+            exit 1
+          fi
+
+          if { [ "$INPUT_TRANSCRIPTION_PROVIDER" = "openai" ] || [ "$INPUT_SUMMARY_PROVIDER" = "openai" ]; } && [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "OPENAI_API_KEY is required when transcription_provider or summary_provider is openai."
+            exit 1
+          fi
+
+      - name: Process pending talks
+        env:
+          INPUT_COMPANY: ${{ inputs.company }}
+          INPUT_TALK_ID: ${{ inputs.talk_id }}
+          INPUT_LIMIT: ${{ inputs.limit }}
+          INPUT_TRANSCRIPTION_PROVIDER: ${{ inputs.transcription_provider }}
+          INPUT_WHISPER_MODEL_SIZE: ${{ inputs.whisper_model_size }}
+          INPUT_SUMMARY_PROVIDER: ${{ inputs.summary_provider }}
+          INPUT_LOCK_TTL_MINUTES: ${{ inputs.lock_ttl_minutes }}
+        run: |
+          set -euo pipefail
+
+          cmd=(
+            python main.py job process-pending
+            --limit "$INPUT_LIMIT"
+            --lock-ttl-minutes "$INPUT_LOCK_TTL_MINUTES"
+            --transcription-provider "$INPUT_TRANSCRIPTION_PROVIDER"
+            --summary-provider "$INPUT_SUMMARY_PROVIDER"
+          )
+
+          if [ -n "$INPUT_COMPANY" ]; then
+            cmd+=(--company "$INPUT_COMPANY")
+          fi
+
+          if [ -n "$INPUT_TALK_ID" ]; then
+            cmd+=(--talk-id "$INPUT_TALK_ID")
+          fi
+
+          if [ "$INPUT_TRANSCRIPTION_PROVIDER" = "faster_whisper" ]; then
+            cmd+=(--whisper-model-size "$INPUT_WHISPER_MODEL_SIZE")
+          fi
+
+          printf 'Running:'
+          printf ' %q' "${cmd[@]}"
+          printf '\n'
+          "${cmd[@]}"
