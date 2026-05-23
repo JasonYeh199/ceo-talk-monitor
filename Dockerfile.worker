@@ -16,4 +16,4 @@ COPY main.py config.yaml ./
 
 RUN pip install -r requirements-worker.txt && pip install --no-deps -e .
 
-CMD ["python", "main.py", "daily", "--metadata-only"]
+CMD ["python", "main.py", "job", "daily-ingest", "--source", "all", "--metadata-only"]
