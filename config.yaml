@@ -122,6 +122,7 @@ relevance:
     - speaks
     - joins
     - conversation
+    - one-on-one
     - fireside chat
     - keynote
     - earnings
@@ -134,6 +135,11 @@ relevance:
     - chart
     - analyst says
     - shares move
+    - step down
+    - steps down
+    - what it means
+    - pay package
+    - compensation package
 
 transcription:
   provider: faster_whisper
