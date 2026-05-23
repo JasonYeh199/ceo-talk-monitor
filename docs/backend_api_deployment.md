@@ -94,3 +94,9 @@ POST /admin/jobs/daily-ingest
 ```
 
 Configure `CEO_TALK_ADMIN_TOKEN` in GitHub Actions to match the Render `ADMIN_API_TOKEN` environment variable.
+
+To clean up stale false-positive metadata after relevance rule changes, run:
+
+```text
+POST /admin/jobs/curate-relevance
+```

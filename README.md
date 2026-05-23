@@ -150,6 +150,7 @@ python main.py ingest --source youtube --company NVDA
 python main.py ingest --source podcast
 python main.py daily
 python main.py job daily-ingest --source youtube --limit 1 --metadata-only
+python main.py job curate-relevance --limit 500
 python main.py process --company NVDA --limit 1
 python main.py summarize --company NVDA --days 30
 python main.py compare --company NVDA --topic "AI demand"
@@ -187,6 +188,7 @@ GET /search?q=AI+demand
 GET /compare?company=NVDA&topic=AI+demand
 GET /jobs
 POST /admin/jobs/daily-ingest
+POST /admin/jobs/curate-relevance
 ```
 
 ## Database Schema

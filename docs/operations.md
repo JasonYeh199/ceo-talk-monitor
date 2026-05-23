@@ -26,6 +26,22 @@ The command records every run in `ingestion_runs`. Check the latest runs with:
 GET /jobs
 ```
 
+## Relevance Curation
+
+Re-run relevance scoring against stored pending candidates and mark stale false positives as `rejected`:
+
+```powershell
+python main.py job curate-relevance --limit 500
+```
+
+The API equivalent is protected by the same admin token:
+
+```text
+POST /admin/jobs/curate-relevance
+```
+
+`GET /talks` hides rejected candidates by default. Use `include_rejected=true` only for audit/debug views.
+
 ## GitHub Actions Scheduler
 
 The repository includes `.github/workflows/cloud-ingest.yml` as a no-worker fallback. It calls the public API and triggers metadata-only ingestion through:

@@ -8,7 +8,7 @@ from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
 from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, init_db, upsert_config_companies
 from ceo_talk_monitor.ingestion import IngestionPipeline
-from ceo_talk_monitor.jobs import run_daily_ingest
+from ceo_talk_monitor.jobs import curate_relevance, run_daily_ingest
 from ceo_talk_monitor.models import Talk
 from ceo_talk_monitor.vector_store import VectorStore
 from sqlalchemy import select
@@ -37,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     process.add_argument("--limit", type=int, default=1)
 
     job = subparsers.add_parser("job", help="Run an operational job with persisted run history")
-    job.add_argument("name", choices=["daily-ingest"])
+    job.add_argument("name", choices=["daily-ingest", "curate-relevance"])
     job.add_argument("--source", choices=["youtube", "podcast", "all"], default="all")
     job.add_argument("--company", help="Optional ticker to limit the job")
     job.add_argument("--limit", type=int, default=None)
@@ -128,15 +128,23 @@ def main() -> None:
             return
 
         if args.command == "job":
-            run = run_daily_ingest(
-                session,
-                config,
-                source=args.source,
-                company=args.company,
-                limit=args.limit,
-                process=not args.metadata_only,
-                lock_ttl_minutes=args.lock_ttl_minutes,
-            )
+            if args.name == "daily-ingest":
+                run = run_daily_ingest(
+                    session,
+                    config,
+                    source=args.source,
+                    company=args.company,
+                    limit=args.limit,
+                    process=not args.metadata_only,
+                    lock_ttl_minutes=args.lock_ttl_minutes,
+                )
+            else:
+                run = curate_relevance(
+                    session,
+                    config,
+                    company=args.company,
+                    limit=args.limit or 500,
+                )
             print(f"Job {run.id} {run.job_name}: {run.status}")
             pprint(run.metrics, sort_dicts=False)
             if run.error_message:

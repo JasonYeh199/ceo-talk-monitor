@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
 from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, get_session, init_db, upsert_config_companies
-from ceo_talk_monitor.jobs import VALID_SOURCES, run_daily_ingest
+from ceo_talk_monitor.jobs import VALID_SOURCES, curate_relevance, run_daily_ingest
 from ceo_talk_monitor.models import Company, IngestionRun, Talk
 from ceo_talk_monitor.vector_store import VectorStore
 
@@ -63,12 +63,15 @@ def create_app() -> FastAPI:
     @app.get("/talks")
     def talks(
         company: str | None = None,
+        include_rejected: bool = False,
         limit: int = Query(default=50, le=200),
         session: Session = Depends(get_session),
     ) -> list[dict]:
         statement = select(Talk).options(selectinload(Talk.summary)).order_by(Talk.published_at.desc().nullslast(), Talk.id.desc())
         if company:
             statement = statement.where(Talk.company_ticker == company.upper())
+        if not include_rejected:
+            statement = statement.where(Talk.status != "rejected")
         rows = session.scalars(statement.limit(limit)).all()
         return [_talk_payload(row, include_segments=False) for row in rows]
 
@@ -117,6 +120,23 @@ def create_app() -> FastAPI:
                 process=False,
                 lock_ttl_minutes=lock_ttl_minutes,
             )
+            return _job_payload(run)
+
+    @app.post("/admin/jobs/curate-relevance")
+    def trigger_relevance_curation(
+        company: str | None = None,
+        limit: int = Query(default=500, ge=1, le=1000),
+        x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+    ) -> dict:
+        _require_admin_token(x_admin_token)
+        config = get_config()
+        if company:
+            try:
+                config.company_by_ticker(company)
+            except KeyError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+        with SessionLocal() as session:
+            run = curate_relevance(session, config, company=company, limit=limit)
             return _job_payload(run)
 
     @app.get("/talks/{talk_id}")
