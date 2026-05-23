@@ -63,6 +63,14 @@ Select JasonYeh199/ceo-talk-monitor
 Set Root Directory to apps/web
 ```
 
+Important: the repository root contains the Python CLI/API entrypoint `main.py`. If Vercel is left at root directory `./`, it may auto-select `FastAPI` and fail with:
+
+```text
+Found main.py but it does not define a top-level
+```
+
+That is expected for the wrong project root. The Vercel project should be the Next.js web app in `apps/web`, not the Python worker/API.
+
 For the production architecture, Vercel should host the research UI. The FastAPI query API and heavy jobs such as `yt-dlp`, Whisper transcription, and embedding generation should run in container environments outside Vercel.
 
 ## Required Environment Variables
@@ -110,3 +118,5 @@ Build Command: npm run build
 Install Command: npm ci
 Output Directory: .next
 ```
+
+If the import screen still shows `Application Preset: FastAPI`, manually change it to `Next.js` after setting Root Directory to `apps/web`.

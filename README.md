@@ -102,6 +102,20 @@ The first Vercel-ready research dashboard lives in `apps/web`.
 
 GitHub Actions runs basic Python and Next.js build checks on each push to `main`.
 
+### Vercel Import Settings
+
+When importing this repository into Vercel, do not deploy the repository root as a FastAPI project. Use:
+
+```text
+Application Preset: Next.js
+Root Directory: apps/web
+Install Command: npm ci
+Build Command: npm run build
+Output Directory: .next
+```
+
+If Vercel shows `Application Preset: FastAPI` or errors with `Found main.py but it does not define a top-level`, the project root is still set to `./`. Click `Edit` next to Root Directory and change it to `apps/web`.
+
 ## Local Python Usage
 
 Install Python 3.11+, FFmpeg, and dependencies:

@@ -67,6 +67,8 @@ GET /readyz
 
 Vercel should point `NEXT_PUBLIC_API_BASE_URL` to the public HTTPS URL of the API image, not to the worker.
 
+The Vercel project Root Directory must be `apps/web`. Leaving it at `./` makes Vercel treat the Python `main.py` as a FastAPI app, which is the wrong runtime for the dashboard.
+
 ## Deployment Phases
 
 ### Phase 1: Repository Readiness
