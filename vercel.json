@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "npm --prefix apps/web ci",
+  "installCommand": "npm ci && npm --prefix apps/web ci",
   "buildCommand": "npm --prefix apps/web run build",
   "outputDirectory": "apps/web/.next"
 }
-
