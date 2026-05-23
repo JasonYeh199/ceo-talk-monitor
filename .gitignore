@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data and downloaded media
+data/audio/**
+data/transcripts/**
+data/cache/**
+data/hf_cache/**
+!data/audio/.gitkeep
+!data/transcripts/.gitkeep
+
+# Vercel / local deployment state
+.vercel/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+

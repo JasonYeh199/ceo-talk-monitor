@@ -1,0 +1,52 @@
+services:
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://ceo_talk:ceo_talk@postgres:5432/ceo_talk
+      QDRANT_URL: http://qdrant:6333
+      APP_CONFIG_PATH: /app/config.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_SUMMARY_MODEL: ${OPENAI_SUMMARY_MODEL:-gpt-4.1-mini}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      HF_HOME: /app/data/hf_cache
+      XDG_CACHE_HOME: /app/data/cache
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./main.py:/app/main.py:ro
+      - ./src:/app/src:ro
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ceo_talk
+      POSTGRES_USER: ceo_talk
+      POSTGRES_PASSWORD: ceo_talk
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ceo_talk -d ceo_talk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  postgres-data:
+  qdrant-data:

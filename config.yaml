@@ -1,0 +1,160 @@
+portfolio:
+  name: QQQ / Nasdaq-100 initial tracking list
+  as_of: "2026-05-21"
+  source:
+    name: User-provided MVP list, cross-checkable against Invesco QQQ holdings
+    url: https://www.invesco.com/qqq-etf/en/about.html
+    retrieved_at: "2026-05-21"
+    notes: Update this block whenever holdings are refreshed from Invesco, Yahoo Finance, Schwab, or another trusted source.
+  tickers:
+    - NVDA
+    - AAPL
+    - MSFT
+    - AMZN
+    - GOOGL
+    - GOOG
+    - MU
+    - TSLA
+    - AVGO
+    - AMD
+
+companies:
+  - ticker: NVDA
+    name: NVIDIA Corporation
+    aliases: [NVIDIA, Nvidia]
+    executives:
+      - { name: Jensen Huang, role: CEO, aliases: [Jen-Hsun Huang] }
+      - { name: Colette Kress, role: CFO, aliases: [] }
+    search_terms:
+      - NVIDIA Jensen Huang CNBC interview
+      - NVIDIA CEO CNBC interview
+  - ticker: AAPL
+    name: Apple Inc.
+    aliases: [Apple]
+    executives:
+      - { name: Tim Cook, role: CEO, aliases: [] }
+      - { name: Kevan Parekh, role: CFO, aliases: [] }
+      - { name: Sabih Khan, role: COO, aliases: [] }
+  - ticker: MSFT
+    name: Microsoft Corporation
+    aliases: [Microsoft]
+    executives:
+      - { name: Satya Nadella, role: CEO, aliases: [] }
+      - { name: Amy Hood, role: CFO, aliases: [] }
+  - ticker: AMZN
+    name: Amazon.com, Inc.
+    aliases: [Amazon, AWS]
+    executives:
+      - { name: Andy Jassy, role: CEO, aliases: [Andrew Jassy] }
+      - { name: Brian Olsavsky, role: CFO, aliases: [] }
+  - ticker: GOOGL
+    name: Alphabet Inc.
+    aliases: [Alphabet, Google]
+    executives:
+      - { name: Sundar Pichai, role: CEO, aliases: [] }
+      - { name: Anat Ashkenazi, role: CFO, aliases: [] }
+  - ticker: GOOG
+    name: Alphabet Inc.
+    aliases: [Alphabet, Google]
+    executives:
+      - { name: Sundar Pichai, role: CEO, aliases: [] }
+      - { name: Anat Ashkenazi, role: CFO, aliases: [] }
+  - ticker: MU
+    name: Micron Technology, Inc.
+    aliases: [Micron]
+    executives:
+      - { name: Sanjay Mehrotra, role: CEO, aliases: [] }
+      - { name: Mark Murphy, role: CFO, aliases: [] }
+      - { name: Manish Bhatia, role: EVP Global Operations, aliases: [] }
+  - ticker: TSLA
+    name: Tesla, Inc.
+    aliases: [Tesla]
+    executives:
+      - { name: Elon Musk, role: CEO, aliases: [] }
+      - { name: Vaibhav Taneja, role: CFO, aliases: [] }
+  - ticker: AVGO
+    name: Broadcom Inc.
+    aliases: [Broadcom]
+    executives:
+      - { name: Hock Tan, role: CEO, aliases: [Tan Hock Eng] }
+      - { name: Kirsten Spears, role: CFO, aliases: [] }
+      - { name: Charlie Kawwas, role: President, aliases: [] }
+  - ticker: AMD
+    name: Advanced Micro Devices, Inc.
+    aliases: [AMD, Advanced Micro Devices]
+    executives:
+      - { name: Lisa Su, role: CEO, aliases: [Dr. Lisa Su] }
+      - { name: Jean Hu, role: CFO, aliases: [] }
+
+sources:
+  youtube:
+    enabled: true
+    search_limit_per_query: 5
+    channel_recent_limit: 20
+    max_items_per_company: 10
+    cnbc_channel_url: https://www.youtube.com/@CNBCTelevision
+    query_templates:
+      - "{company} {executive} CNBC interview"
+      - "{ticker} {executive} CNBC"
+      - "{company} CEO CNBC interview"
+      - "{company} earnings reaction CNBC interview"
+  podcasts:
+    enabled: true
+    max_entries_per_feed: 30
+    feeds:
+      - name: CNBC Squawk Box
+        url: https://podcasts.apple.com/us/podcast/feed/id1480890290
+      - name: CNBC Closing Bell
+        url: https://podcasts.apple.com/us/podcast/feed/id1612281974
+      - name: Decoder with Nilay Patel
+        url: https://feeds.megaphone.fm/recodedecode
+      - name: Acquired
+        url: https://feeds.transistor.fm/acquired
+      - name: Invest Like the Best
+        url: https://feeds.simplecast.com/PJDRWW6t
+      - name: Bloomberg Technology
+        url: https://podcasts.apple.com/us/podcast/feed/id1611767434
+
+relevance:
+  threshold: 7.0
+  include_terms:
+    - interview
+    - speaks
+    - joins
+    - conversation
+    - fireside chat
+    - keynote
+    - earnings
+    - guidance
+    - conference
+  exclude_terms:
+    - stock alert
+    - price target
+    - technical analysis
+    - chart
+    - analyst says
+    - shares move
+
+transcription:
+  provider: faster_whisper
+  model_size: small
+  device: cpu
+  compute_type: int8
+  language: en
+  diarization:
+    enabled: false
+
+summarization:
+  provider: heuristic
+  model: gpt-4.1-mini
+  max_transcript_chars: 20000
+  output_language: zh-TW
+
+vector_store:
+  provider: qdrant
+  collection_name: ceo_talk_transcripts
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+
+storage:
+  audio_dir: data/audio
+  transcript_dir: data/transcripts
