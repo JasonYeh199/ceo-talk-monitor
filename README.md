@@ -97,6 +97,7 @@ Vercel hosts the research UI in `apps/web`. The FastAPI query API and long-runni
 
 - `docs/github_vercel_setup.md`
 - `docs/vercel_architecture.md`
+- `docs/backend_api_deployment.md`
 
 The first Vercel-ready research dashboard lives in `apps/web`.
 

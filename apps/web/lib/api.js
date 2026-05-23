@@ -1,4 +1,13 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+const runningOnVercel = Boolean(process.env.VERCEL);
+const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/;
+const API_BASE_URL = configuredApiBaseUrl || (runningOnVercel ? "" : "http://localhost:8000");
+const API_CONFIG_ERROR =
+  runningOnVercel && !configuredApiBaseUrl
+    ? "NEXT_PUBLIC_API_BASE_URL is not configured in Vercel. Deploy the FastAPI API and set this variable to its public HTTPS URL."
+    : runningOnVercel && localhostPattern.test(configuredApiBaseUrl)
+      ? "NEXT_PUBLIC_API_BASE_URL points to localhost. Vercel needs a public HTTPS API URL."
+      : null;
 
 export async function fetchCompanies() {
   return fetchJson("/companies");
@@ -17,8 +26,12 @@ export async function fetchSearch(query) {
 }
 
 async function fetchJson(path) {
+  if (API_CONFIG_ERROR) {
+    return { data: null, error: API_CONFIG_ERROR };
+  }
+
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${API_BASE_URL.replace(/\/$/, "")}${path}`, {
       cache: "no-store",
       headers: {
         accept: "application/json",
@@ -32,4 +45,3 @@ async function fetchJson(path) {
     return { data: null, error: error instanceof Error ? error.message : String(error) };
   }
 }
-

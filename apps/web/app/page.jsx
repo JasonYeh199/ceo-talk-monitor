@@ -26,7 +26,11 @@ export default async function Home({ searchParams }) {
   const errors = [companiesResult, talksResult, compareResult, searchResult].filter((result) => result.error);
 
   const readyCount = talks.filter((talk) => talk.status === "ready").length;
-  const tones = countBy(talks, (talk) => talk.summary?.management_tone || "pending");
+  const toneCounts = {
+    optimistic: countTone(talks, ["optimistic", "positive", "bullish", "\u6a02\u89c0"]),
+    neutral: countTone(talks, ["neutral", "\u4e2d\u6027"]),
+    conservative: countTone(talks, ["conservative", "cautious", "\u4fdd\u5b88"]),
+  };
 
   return (
     <main>
@@ -77,9 +81,9 @@ export default async function Home({ searchParams }) {
       <section className="metrics">
         <Metric label="Talks" value={talks.length} />
         <Metric label="Ready" value={readyCount} />
-        <Metric label="Optimistic" value={tones["樂觀"] || 0} />
-        <Metric label="Neutral" value={tones["中性"] || 0} />
-        <Metric label="Conservative" value={tones["保守"] || 0} />
+        <Metric label="Optimistic" value={toneCounts.optimistic} />
+        <Metric label="Neutral" value={toneCounts.neutral} />
+        <Metric label="Conservative" value={toneCounts.conservative} />
       </section>
 
       <section className="workspace">
@@ -174,11 +178,10 @@ function ResultList({ title, items, kind }) {
   );
 }
 
-function countBy(items, getKey) {
-  return items.reduce((acc, item) => {
-    const key = getKey(item);
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
+function countTone(items, aliases) {
+  return items.reduce((count, item) => {
+    const tone = String(item.summary?.management_tone || "").toLowerCase();
+    const matches = aliases.some((alias) => tone.includes(alias.toLowerCase()));
+    return matches ? count + 1 : count;
+  }, 0);
 }
-
