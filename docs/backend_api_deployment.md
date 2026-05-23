@@ -91,6 +91,7 @@ When Render one-off jobs are unavailable, use the GitHub Actions scheduler in `.
 
 ```text
 POST /admin/jobs/daily-ingest
+POST /admin/jobs/curate-relevance
 ```
 
 Configure `CEO_TALK_ADMIN_TOKEN` in GitHub Actions to match the Render `ADMIN_API_TOKEN` environment variable.

@@ -50,6 +50,14 @@ The repository includes `.github/workflows/cloud-ingest.yml` as a no-worker fall
 POST /admin/jobs/daily-ingest
 ```
 
+After ingestion succeeds, the workflow also calls:
+
+```text
+POST /admin/jobs/curate-relevance
+```
+
+This means scheduled runs both discover new candidates and clean stale false positives from the default research view.
+
 Set these GitHub Actions secrets:
 
 ```text

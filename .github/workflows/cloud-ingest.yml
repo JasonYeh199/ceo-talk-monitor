@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Trigger API job
+      - name: Trigger metadata ingest
         env:
           API_BASE_URL: ${{ secrets.CEO_TALK_API_BASE_URL }}
           ADMIN_TOKEN: ${{ secrets.CEO_TALK_ADMIN_TOKEN }}
@@ -64,6 +64,38 @@ jobs:
           fi
 
           echo "Triggering metadata-only ingestion: source=${source}, company=${company:-ALL}, limit=${limit}"
+
+          response_file="$(mktemp)"
+          status_code="$(curl --silent --show-error --location --request POST \
+            --header "X-Admin-Token: ${ADMIN_TOKEN}" \
+            --write-out "%{http_code}" \
+            --output "$response_file" \
+            "$url")"
+
+          cat "$response_file"
+          echo
+
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            echo "API returned HTTP ${status_code}"
+            exit 1
+          fi
+
+      - name: Curate relevance
+        env:
+          API_BASE_URL: ${{ secrets.CEO_TALK_API_BASE_URL }}
+          ADMIN_TOKEN: ${{ secrets.CEO_TALK_ADMIN_TOKEN }}
+          INPUT_COMPANY: ${{ inputs.company }}
+        run: |
+          set -euo pipefail
+
+          api_base_url="${API_BASE_URL:-https://ceo-talk-monitor-api.onrender.com}"
+          company="${INPUT_COMPANY:-}"
+          url="${api_base_url%/}/admin/jobs/curate-relevance?limit=500"
+          if [ -n "$company" ]; then
+            url="${url}&company=${company}"
+          fi
+
+          echo "Curating relevance: company=${company:-ALL}"
 
           response_file="$(mktemp)"
           status_code="$(curl --silent --show-error --location --request POST \
