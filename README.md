@@ -186,6 +186,7 @@ GET /talks/{id}
 GET /search?q=AI+demand
 GET /compare?company=NVDA&topic=AI+demand
 GET /jobs
+POST /admin/jobs/daily-ingest
 ```
 
 ## Database Schema

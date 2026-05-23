@@ -87,3 +87,5 @@ https://ceo-talk-monitor-api.onrender.com/jobs
 ```
 
 If Render blocks one-off jobs with `new paid services not allowed`, enable a paid job/worker runtime or use another scheduler before turning on daily ingestion.
+
+The repo includes a GitHub Actions scheduler fallback. Set `ADMIN_API_TOKEN` on the Render API service and set the same value as the `CEO_TALK_ADMIN_TOKEN` GitHub Actions secret. The workflow calls `POST /admin/jobs/daily-ingest` with `metadata_only=true`.

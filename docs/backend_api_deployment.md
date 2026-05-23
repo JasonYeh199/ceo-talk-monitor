@@ -25,6 +25,7 @@ QDRANT_API_KEY=
 APP_CONFIG_PATH=/app/config.yaml
 OPENAI_API_KEY=
 OPENAI_SUMMARY_MODEL=gpt-4.1-mini
+ADMIN_API_TOKEN=
 LOG_LEVEL=INFO
 ```
 
@@ -85,3 +86,11 @@ Each run is written to `ingestion_runs` and exposed through:
 ```text
 GET /jobs
 ```
+
+When Render one-off jobs are unavailable, use the GitHub Actions scheduler in `.github/workflows/cloud-ingest.yml`. It calls:
+
+```text
+POST /admin/jobs/daily-ingest
+```
+
+Configure `CEO_TALK_ADMIN_TOKEN` in GitHub Actions to match the Render `ADMIN_API_TOKEN` environment variable.

@@ -26,6 +26,38 @@ The command records every run in `ingestion_runs`. Check the latest runs with:
 GET /jobs
 ```
 
+## GitHub Actions Scheduler
+
+The repository includes `.github/workflows/cloud-ingest.yml` as a no-worker fallback. It calls the public API and triggers metadata-only ingestion through:
+
+```text
+POST /admin/jobs/daily-ingest
+```
+
+Set these GitHub Actions secrets:
+
+```text
+CEO_TALK_ADMIN_TOKEN=<same value as Render ADMIN_API_TOKEN>
+CEO_TALK_API_BASE_URL=https://ceo-talk-monitor-api.onrender.com
+```
+
+Set this Render API service environment variable:
+
+```text
+ADMIN_API_TOKEN=<strong random token>
+```
+
+The scheduled workflow runs on weekdays and defaults to:
+
+```text
+source=youtube
+company=NVDA
+limit=3
+metadata_only=true
+```
+
+This keeps discovery automated without running audio download or Whisper inside the web API container.
+
 ## Overlap Protection
 
 `daily-ingest` skips a new run if another run has been in `running` status within the lock TTL. The default TTL is 180 minutes:
@@ -44,6 +76,7 @@ API and worker containers should share these variables:
 DATABASE_URL=postgresql+psycopg://...
 QDRANT_URL=https://...
 QDRANT_API_KEY=
+ADMIN_API_TOKEN=
 APP_CONFIG_PATH=/app/config.yaml
 OPENAI_API_KEY=
 OPENAI_SUMMARY_MODEL=gpt-4.1-mini

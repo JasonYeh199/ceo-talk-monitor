@@ -1,0 +1,70 @@
+name: Cloud Metadata Ingest
+
+on:
+  schedule:
+    - cron: "10 14 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Source to check"
+        required: true
+        default: "youtube"
+        type: choice
+        options:
+          - youtube
+          - podcast
+          - all
+      company:
+        description: "Optional ticker"
+        required: false
+        default: "NVDA"
+      limit:
+        description: "Accepted candidates per scope"
+        required: true
+        default: "3"
+
+jobs:
+  metadata-ingest:
+    name: Trigger metadata-only ingestion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Trigger API job
+        env:
+          API_BASE_URL: ${{ secrets.CEO_TALK_API_BASE_URL }}
+          ADMIN_TOKEN: ${{ secrets.CEO_TALK_ADMIN_TOKEN }}
+          INPUT_SOURCE: ${{ inputs.source }}
+          INPUT_COMPANY: ${{ inputs.company }}
+          INPUT_LIMIT: ${{ inputs.limit }}
+        run: |
+          set -euo pipefail
+
+          api_base_url="${API_BASE_URL:-https://ceo-talk-monitor-api.onrender.com}"
+          source="${INPUT_SOURCE:-youtube}"
+          company="${INPUT_COMPANY:-NVDA}"
+          limit="${INPUT_LIMIT:-3}"
+
+          if [ -z "${ADMIN_TOKEN:-}" ]; then
+            echo "CEO_TALK_ADMIN_TOKEN is not configured."
+            exit 1
+          fi
+
+          url="${api_base_url%/}/admin/jobs/daily-ingest?source=${source}&limit=${limit}&metadata_only=true"
+          if [ -n "$company" ]; then
+            url="${url}&company=${company}"
+          fi
+
+          response_file="$(mktemp)"
+          status_code="$(curl --silent --show-error --location --request POST \
+            --header "X-Admin-Token: ${ADMIN_TOKEN}" \
+            --write-out "%{http_code}" \
+            --output "$response_file" \
+            "$url")"
+
+          cat "$response_file"
+          echo
+
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            echo "API returned HTTP ${status_code}"
+            exit 1
+          fi

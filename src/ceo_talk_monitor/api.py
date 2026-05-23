@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from secrets import compare_digest
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 
 from ceo_talk_monitor.compare import compare_company_topic, postgres_text_search
 from ceo_talk_monitor.config import get_config, get_settings
 from ceo_talk_monitor.db import SessionLocal, get_session, init_db, upsert_config_companies
+from ceo_talk_monitor.jobs import VALID_SOURCES, run_daily_ingest
 from ceo_talk_monitor.models import Company, IngestionRun, Talk
 from ceo_talk_monitor.vector_store import VectorStore
 
@@ -80,6 +83,41 @@ def create_app() -> FastAPI:
             statement = statement.where(IngestionRun.status == status)
         rows = session.scalars(statement.limit(limit)).all()
         return [_job_payload(row) for row in rows]
+
+    @app.post("/admin/jobs/daily-ingest")
+    def trigger_daily_ingest(
+        source: str = Query(default="youtube"),
+        company: str | None = None,
+        limit: int = Query(default=3, ge=1, le=10),
+        metadata_only: bool = True,
+        lock_ttl_minutes: int = Query(default=180, ge=0, le=1440),
+        x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+    ) -> dict:
+        _require_admin_token(x_admin_token)
+        normalized_source = source.lower()
+        if normalized_source not in VALID_SOURCES:
+            raise HTTPException(status_code=400, detail=f"Unsupported source: {source}")
+        if not metadata_only:
+            raise HTTPException(status_code=400, detail="Cloud admin trigger only supports metadata_only=true")
+
+        config = get_config()
+        if company:
+            try:
+                config.company_by_ticker(company)
+            except KeyError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        with SessionLocal() as session:
+            run = run_daily_ingest(
+                session,
+                config,
+                source=normalized_source,
+                company=company,
+                limit=limit,
+                process=False,
+                lock_ttl_minutes=lock_ttl_minutes,
+            )
+            return _job_payload(run)
 
     @app.get("/talks/{talk_id}")
     def talk_detail(talk_id: int, session: Session = Depends(get_session)) -> dict:
@@ -171,6 +209,14 @@ def _job_payload(run: IngestionRun) -> dict:
         "error_message": run.error_message,
         "exit_code": run.exit_code,
     }
+
+
+def _require_admin_token(provided_token: str | None) -> None:
+    expected_token = get_settings().admin_api_token
+    if not expected_token:
+        raise HTTPException(status_code=503, detail="ADMIN_API_TOKEN is not configured")
+    if not provided_token or not compare_digest(provided_token, expected_token):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
 
 
 app = create_app()

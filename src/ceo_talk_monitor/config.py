@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     qdrant_api_key: str | None = None
     openai_api_key: str | None = None
     openai_summary_model: str | None = None
+    admin_api_token: str | None = None
     app_config_path: str = "config.yaml"
     log_level: str = "INFO"
 
