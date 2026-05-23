@@ -4,6 +4,7 @@ services:
   - type: web
     name: ceo-talk-monitor-api
     runtime: docker
+    plan: free
     region: singapore
     dockerfilePath: ./Dockerfile.api
     dockerContext: .
@@ -29,5 +30,6 @@ services:
 
 databases:
   - name: ceo-talk-monitor-db
+    plan: free
     databaseName: ceo_talk
     user: ceo_talk

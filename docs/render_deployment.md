@@ -13,6 +13,15 @@ The API is a Docker service and needs to connect to Postgres. Render supports Do
 3. Confirm the `ceo-talk-monitor-api` web service and `ceo-talk-monitor-db` Postgres database.
 4. Deploy.
 
+The default Blueprint uses Render's free instance types:
+
+```text
+ceo-talk-monitor-api: free web service
+ceo-talk-monitor-db: free Postgres
+```
+
+Render free Postgres databases are suitable for MVP validation but expire after 30 days unless upgraded.
+
 The API service uses:
 
 ```text

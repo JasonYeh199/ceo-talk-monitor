@@ -30,6 +30,9 @@ data/hf_cache/**
 # Vercel / local deployment state
 .vercel/
 
+# Local CLI tools
+tools/
+
 # Node / Next.js
 node_modules/
 .next/
