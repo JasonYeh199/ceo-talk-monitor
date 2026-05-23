@@ -60,6 +60,7 @@ In Vercel:
 Add New Project
 Import Git Repository
 Select JasonYeh199/ceo-talk-monitor
+Set Root Directory to apps/web
 ```
 
 For the production architecture, Vercel should host the research UI and thin query API. Heavy jobs such as `yt-dlp`, Whisper transcription, and embedding generation should run in a worker environment outside Vercel.
@@ -69,11 +70,7 @@ For the production architecture, Vercel should host the research UI and thin que
 For Vercel UI / thin API:
 
 ```text
-DATABASE_URL
-QDRANT_URL
-OPENAI_API_KEY
-OPENAI_SUMMARY_MODEL
-APP_CONFIG_PATH
+NEXT_PUBLIC_API_BASE_URL
 ```
 
 For worker runtime:
@@ -102,4 +99,3 @@ Worker still runs locally or on a separate worker platform
 ```
 
 This avoids forcing long-running transcription jobs into Vercel Functions.
-

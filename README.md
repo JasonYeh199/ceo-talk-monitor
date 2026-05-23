@@ -20,6 +20,8 @@ Input `NVDA`, find CNBC YouTube videos related to Jensen Huang, download audio, 
 |-- requirements.txt
 |-- schema.sql
 |-- .env.example
+|-- apps/
+|   `-- web/
 |-- src/
 |   `-- ceo_talk_monitor/
 |       |-- api.py
@@ -91,6 +93,8 @@ Vercel can host the research UI and thin query API. Long-running download/transc
 
 - `docs/github_vercel_setup.md`
 - `docs/vercel_architecture.md`
+
+The first Vercel-ready research dashboard lives in `apps/web`.
 
 ## Local Python Usage
 

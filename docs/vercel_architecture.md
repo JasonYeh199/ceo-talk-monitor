@@ -50,6 +50,7 @@ Worker runtime
 - Add `.gitignore` to exclude audio, transcripts, model caches, and secrets.
 - Push source code to `JasonYeh199/ceo-talk-monitor`.
 - Keep current Docker Compose for local development.
+- Deploy `apps/web` to Vercel as the read-only research dashboard.
 
 ### Phase 2: Read-Only Cloud App
 
@@ -74,3 +75,22 @@ Worker runtime
 
 Vercel Python Functions are suitable for FastAPI-style request/response workloads. They are not a good fit for 30-60 minute audio transcription jobs, local Whisper model loading, or persistent file storage. Keep Vercel thin and push durable work to worker infrastructure.
 
+## Current Web App
+
+The initial Vercel app lives in:
+
+```text
+apps/web
+```
+
+Set the Vercel project root directory to `apps/web` and configure:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://your-fastapi-backend.example.com
+```
+
+For local development, point it at:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```

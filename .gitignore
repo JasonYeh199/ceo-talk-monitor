@@ -30,9 +30,14 @@ data/hf_cache/**
 # Vercel / local deployment state
 .vercel/
 
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+
 # OS / editor
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-
